@@ -1,0 +1,146 @@
+#!/usr/bin/env sh
+
+#libgnomeprintui-2.2
+#espeak mbrola-br{1,2,3,4}
+# xdg-utils
+# cacautils
+# pdftotext
+# fzf
+# fbi
+# tty-clock
+# members
+#keychain
+# psmisc
+
+# BASICS
+git
+build-essential
+libssl-dev
+exuberant-ctags
+ncurses-term
+ack
+software-properties-common
+curl
+apt-transport-https
+wget
+grep
+silversearcher-ag
+locate
+xz-utils
+info
+texinfo
+rsync
+
+# SYSTEM_INFO
+htop
+neofetch
+inxi
+
+# COMMANDO LINE, TERMINALS, ETC
+tmux
+tilix
+gnome-terminal
+yad
+dialog
+
+# DISPLAY
+xbacklight
+compton
+
+# AUDIO
+pulseaudio
+pasystray
+pavucontrol
+alsa-utils
+mpg123
+vorbis-tools
+#aplay
+
+# VIDEO
+vlc
+mpv
+ffmpeg
+
+# IMG
+gimp
+deepin-image-viewer
+sxiv
+feh
+scrot
+gthumb
+xfce4-screenshooter
+deepin-screenshot
+imagemagick
+peek
+jp2a
+figlet
+toilet
+
+# SETTINGS
+xfce4-power-manager
+libnotify-bin
+xfce4-notifyd
+acpitool
+lm-sensors
+libplayerctl2
+playerctl
+dbus-x11
+blueman
+gparted
+
+# BROWSERS
+firefox-esr
+links
+
+# TEXT_EDITORS
+gedit
+ghostwriter
+xfce4-notes
+
+# APPEARENCE
+hicolor-icon-theme
+papirus-icon-theme
+materia-gtk-theme
+gtk2-engines-murrine
+gtk2-engines-pixbuf
+sassc
+libcanberra-gtk-module
+libglib2.0-dev
+libxml2-utils
+gtk2-engines
+libgtkmm-2.4-dev
+autoconf
+automake
+libgtk-3-dev
+pkg-config
+gnome-themes-standard
+
+# OFFICE
+nautilus
+rofi
+alpine
+deepin-calculator
+libreoffice
+hplip
+hplip-gui
+zip
+poppler-utils # pdf
+atril # pdf
+
+# Cool
+cmatrix
+cowsay
+lolcat
+#funny-man
+
+# Fonts
+libotf0
+fontconfig
+fontconfig-config
+gucharmap
+kcharselect
+font-manager
+libpango-1.0-0
+gnome-font-viewer
+gnome-characters
+#/usr/lib/x86_64-linux-gnu/font-manager/font-viewer
