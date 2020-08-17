@@ -16,6 +16,7 @@ build-essential
 libssl-dev
 exuberant-ctags
 ncurses-term
+gnupg
 ack
 software-properties-common
 curl
