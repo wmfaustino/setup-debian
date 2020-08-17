@@ -6,7 +6,7 @@
 #  author : Wilson Faustino                            |
 #  e-mail : <open source (a) wmfaustino dev>           |
 #  site   : http://wmfaustino.dev                      |
-#  version: 1.0.0                                      |
+#  version: 1.0.1                                      |
 #  date   : 16/08/2020                                 |
 #  usage  : ./apt-pkgs.in.sh                           |
 #                                                      |
@@ -16,8 +16,8 @@
 # === GLOBAL VARIABLES
 
 declare -Arg listOrigin=(
-  [local]='../lib/apt-pkgs.list'
-  [remote]='https://github.com/wmfaustino/setup-debian/raw/master/lib/apt-pkgs.list'
+  [local]='./lib/apt-pkgs.list'
+  [remote]='https://github.com/wmfaustino/setup-debian/raw/master/lib/apt-pkgs.list9'
 )
 
 declare -g pkgsToInstall=''
@@ -25,10 +25,9 @@ declare -g pkgsToInstall=''
 # === ENTRY POINT
 
 main(){
-  
-  _getPkgsList
 
-  #printf "%s\n" "${pkgsToInstall}"
+  _suCheck
+  _getPkgsList
 
   _installPkgs "${pkgsToInstall}"
   
@@ -47,7 +46,7 @@ function _suCheck(){
 
 # ---
 
-_getPkgsList(){
+function _getPkgsList(){
  
   local -r errMsg='Unable to get package list'
 
