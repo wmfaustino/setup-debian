@@ -4,10 +4,10 @@ declare -rg baseUrl='https://github.com/wmfaustino/setup-debian/raw/master/insta
 
 declare -arg installScripts=(
   apt-pkgs.in.sh
- #neovim.in.sh
+ neovim.in.sh
  #scodium.in.sh
- #brave-browser.in.sh
- #virtualbox.in.sh
+ brave-browser.in.sh
+ virtualbox.in.sh
 )
 
 declare -rg tmpDir='/tmp/debian-setup'
