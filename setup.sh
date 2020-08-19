@@ -15,7 +15,7 @@ declare -rg tmpDir='/tmp/debian-setup'
 main(){
 
   _getInstallScripts
-  _makeExecutable
+  _setPermissions
   _install
 }
 
@@ -27,12 +27,13 @@ function _getInstallScripts(){
 
 }
 
-function _makeExecutable()(
+function _setPermissions()(
 
-  for script in "${tmpDir}"/*; do
-    chmod 500 $script
-  done
+  local -r _USER="${SUDO_USER:-$USER}"
+  chown -R "${_USER}":"${_USER}" "${tmpDir}"
+  chmod -R 770 "${tmpDir}"
 
+  exit 0
 )
 
 function _install(){
