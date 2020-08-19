@@ -3,13 +3,13 @@
 # bash_version: GNU bash, version 5.0.3(1)-release (x86_64-pc-linux-gnu)
 # ------------------------------------------------------------
 
-#TITLE          : inst_brave-browser
+#TITLE          : brave-browser.in.sh
 #DESCRIPTION    : Set up Brave repository at apt source list; Install Brave
 #SOURCE         : 
 #AUTHOR         : Wilson Faustino <open source (a) wfaustino dev>
 #DATE           : 2020-jul-18
-#VERSION        : 1.0.0    
-#USAGE		      : ./inst_brave-browser
+#VERSION        : 1.0.1    
+#USAGE		      : ./brave-browser.in.sh
 
 #NOTES          : It was tested on Debian Buster
 
@@ -36,14 +36,14 @@ declare -rg package='brave-browser'
 
 declare -Arg instScript=(
   [name]="${0##*/}"
-  [version]="1.0.0"
+  [version]="1.0.1"
   [date]='2020-jul-18'
 )
 
 declare -Arg author=(
   [name]='Wilson Faustino'
-  [website]='wmfaustino.dev'
-  [email]='open.source@wmfaustino.dev'
+  [website]='wmfaustino dev'
+  [email]='open source (a) wmfaustino dev'
 )
 
 # ==========================================================
@@ -223,7 +223,7 @@ _aptInstall(){
 (( ! "$#" )) && main
 
 case "$1" in
-  "-i"|"--install") main
+  "-i"|"--install") main                                  ;;
   "-y"            ) confirmInstall=0; main                ;;
   "-h"|"--help"   ) _printHelp      ; exit 0              ;;
   "-a"|"--about"  ) _printAbout     ; exit 0              ;;
