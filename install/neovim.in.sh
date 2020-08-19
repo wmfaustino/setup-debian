@@ -7,7 +7,7 @@
 # AUTHOR        : Wilson Faustino <open source (a) wfaustino dev>
 
 # DATE          : 2020-aug-04
-# VERSION       : 1.0.0    
+# VERSION       : 1.0.1    
 
 # DEPENDENCIES  : git curl
 
@@ -30,17 +30,18 @@
 # === ABOUT VARIABLES
 
 itSelfName="${0##*/}"
-itSelfVersion="1.0.0"
+itSelfVersion="1.0.1"
 itSelfDate='2020-aug-04'
 
 authorName='Wilson Faustino'
-authorWebsite='wmfaustino.dev'
-authorEmail='open.source@wmfaustino.dev'
+authorWebsite='wmfaustino dev'
+authorEmail='open source@wmfaustino dev'
 
 # === DEPENDENCIES
 dependencies="\
-  git
-  curl
+  build-essential \
+  git \
+  curl \
   golang\
 "
 # === CONFIG
