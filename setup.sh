@@ -39,7 +39,7 @@ function _setPermissions()(
 function _install(){
   
   for i in "${tmpDir}"/*; do
-    "${i}" -y
+    ( "${i}" -y )
     #curl -L "${base}/${i}" | bash -s -- -y
   done
   
