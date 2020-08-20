@@ -31,7 +31,7 @@ main(){
   _suCheck
   _getPkgsList
 
-  apt install $pkgsToInstall
+  apt install $pkgsToInstall "${1}"
  
   exit 0
 }
