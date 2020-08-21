@@ -194,7 +194,12 @@ _installDependencies(){
 
 _getKey(){
   
-  curl "${1}" | apt-key --keyring "${2}" add -
+  ( curl "${1}" | apt-key --keyring "${2}" add - )
+
+  if ["$?" -ne 0 ]; then
+    echo '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+    sleep 5
+  fi
 
   return 0
 }
