@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare -rg baseUrl='https://github.com/wmfaustino/setup-debian/raw/master/install'
+declare -rg baseUrl='https://github.com/wmfaustino/setup-debian/raw/brave-browser/install'
 
 declare -arg installScripts=(
   apt-pkgs.in.sh
