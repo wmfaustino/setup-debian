@@ -19,7 +19,7 @@
 
 declare -Arg listOrigin=(
   [local]='./lib/apt-pkgs.list'
-  [remote]='https://github.com/wmfaustino/setup-debian/raw/master/lib/apt-pkgs.list'
+  [remote]='https://github.com/wmfaustino/setup-debian/raw/brave-browser/lib/apt-pkgs.list'
 )
 
 declare -g pkgsToInstall=''
