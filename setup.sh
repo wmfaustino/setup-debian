@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-declare -rg baseUrl='https://github.com/wmfaustino/setup-debian/raw/brave-browser/install'
+declare -rg baseUrl='https://github.com/wmfaustino/setup-debian/raw/master/install'
 
 declare -arg installScripts=(
   apt-pkgs.in.sh
+  dropbox.in.sh
  neovim.in.sh
  #scodium.in.sh
  brave-browser.in.sh

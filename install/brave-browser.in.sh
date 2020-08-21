@@ -8,7 +8,7 @@
 #SOURCE         : 
 #AUTHOR         : Wilson Faustino <open source (a) wfaustino dev>
 #DATE           : 2020-jul-18
-#VERSION        : 1.0.1    
+#VERSION        : 1.0.0    
 #USAGE		      : ./brave-browser.in.sh
 
 #NOTES          : It was tested on Debian Buster
@@ -192,17 +192,8 @@ _installDependencies(){
   return 0
 }
 
-_getKey(){
-  
-  ( curl "${1}" | apt-key --keyring "${2}" add - )
+_getKey()( curl "${1}" | apt-key --keyring "${2}" add - )
 
-  if ["$?" -ne 0 ]; then
-    echo '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-    sleep 5
-  fi
-
-  return 0
-}
 
 _setSourceList(){
 
@@ -222,7 +213,7 @@ _aptInstall(){
 }
 
 # ==========================================================
-# === STARTS INSTALLATION
+# === START INSTALLATION
 # ==========================================================
 
 (( ! "$#" )) && main
