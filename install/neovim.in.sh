@@ -30,8 +30,8 @@
 # === ABOUT VARIABLES
 
 itSelfName="${0##*/}"
-itSelfVersion="1.0.1"
-itSelfDate='2020-aug-04'
+itSelfVersion="1.1.0"
+itSelfDate='2020-dec-27'
 
 authorName='Wilson Faustino'
 authorWebsite='wmfaustino dev'
@@ -67,35 +67,11 @@ vimPlugInstallDir="${localDataDir}/nvim/site/autoload/${vimPlug}"
 # =========================================================
 instDeps=0
 instNvim=0
-instVimPlug=0
 instDotfile=0
 
-# =========================================================
-# === ENTRY POINT
-# =========================================================
-_main(){
-  
-  # Install Dependencies
-  [ "${instDeps}" -eq 1 ] && _installFromApt "${dependencies}"
-  
-  # Install Neovim
-  [ "${instNvim}" -eq 1 ] && _installFromApt 'neovim'
-  
-  # Install Vim Plug
-  [ "${instVimPlug}" -eq 1 ] && \
-    _installFromCurl "${vimPlugInstallDir}" "${vimPlugSrcLink}"
-  
-  # Install Dotfile
-  [ "${instDotfile}" -eq 1 ] && \
-    _installFromCurl "${dotfileDestDir}" "${dotfileSrcLink}"
-  
-  # Install Plugins listed on dotfile
-  if { [ "${instVimPlug}" -eq 1 ] && [ "${instDotfile}" -eq 1 ]; }; then
-    _installPlugins
-  fi
-  
-  exit 0
-}
+instVimPlug=0
+in_pluggins=0
+
 
 # =========================================================
 # === FUNCTIONS
@@ -110,12 +86,14 @@ _usage(){
     
     OPTIONS:
 
-      -n, --neovim        Install Neovim
-      -p, --vim-plug      Install Vim Plug
-      -d, --dotfiles      Install Neovim dotfile
-      -D, --dependencies  Install Dependencies
+      -b, --base          Installs Neovim and Vim Plug
+      -n, --neovim        Installs Neovim
+      -p, --vim-plug      Installs Vim Plug
+      -P, --pluggins      Installs Dotfile and Pluggins
+      -d, --dotfiles      Installs Dotfile
+      -D, --dependencies  Installs Dependencies
       
-      -y, --install-all   Install Neovim, Vim Plug, Dependencies and Dotfiles
+      -y, --install-all   Installs Neovim, Vim Plug, Pluggins, Dependencies and Dotfiles
       
       -V, --version       Prints version
       -h, --help          Prints this message
@@ -211,6 +189,33 @@ _installPlugins(){
 }
 
 # =========================================================
+# === ENTRY POINT
+# =========================================================
+_main(){
+  
+  # Install Dependencies
+  [ "${instDeps}" -eq 1 ] && _installFromApt "${dependencies}"
+  
+  # Install Neovim
+  [ "${instNvim}" -eq 1 ] && _installFromApt 'neovim'
+  
+  # Install Vim Plug
+  [ "${instVimPlug}" -eq 1 ] && \
+    _installFromCurl "${vimPlugInstallDir}" "${vimPlugSrcLink}"
+  
+  # Install Dotfile
+  [ "${instDotfile}" -eq 1 ] && \
+    _installFromCurl "${dotfileDestDir}" "${dotfileSrcLink}"
+  
+  # Install Plugins listed on dotfile
+  if { [ "${in_pluggins}" -eq 1 ] && [ "${instDotfile}" -eq 1 ]; }; then
+    _installPlugins
+  fi
+  
+  exit 0
+}
+
+# =========================================================
 # === STARTS INSTALLATION
 # =========================================================
 
@@ -218,21 +223,24 @@ _installPlugins(){
 
 while [ -n "${1}" ]; do
         case "${1}" in
-            "-n"|"--neovim"       ) instNvim=1            ;;
-            "-p"|"--vim-plug"     ) instVimPlug=1         ;;
-            "-d"|"--dotfiles"     ) instDotfile=1         ;;
-            "-D"|"--dependencies" ) instDeps=1            ;;
+            "-b"|"--base"         ) instNvim=1 && instVimPlug=1   ;;
+            "-n"|"--neovim"       ) instNvim=1                    ;;
+            "-p"|"--vim-plug"     ) instVimPlug=1                 ;;
+            "-P"|"--pluggins"     ) in_pluggins=1 && instDotfile=1;;
+            "-d"|"--dotfiles"     ) instDotfile=1                 ;;
+            "-D"|"--dependencies" ) instDeps=1                    ;;
             "-y"|"--install-all"  )
               instNvim=1                        ; 
               instVimPlug=1                     ;
+              in_pluggins=1                     ;
               instDotfile=1                     ;
               instDeps=1                        ;
-              _main                                       ;;
-            "-h"|"--help"   ) _usage            ; exit 0  ;;
-            "-V"|"--version") _printVersion     ; exit 0  ;;
+              _main                                               ;;
+            "-h"|"--help"   ) _usage            ; exit 0          ;;
+            "-V"|"--version") _printVersion     ; exit 0          ;;
             *               )
-              _usage "Invalid option. ${1}"  ;
-              exit 1                                      ;;
+              _usage "Invalid option. ${1}"     ;
+              exit 1                                           ;;
         esac
         shift
 done
