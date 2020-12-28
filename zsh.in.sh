@@ -88,7 +88,7 @@ dotfiles_src_links="\
 #--- plugins
 ZPLUGDIR="${ZDOTDIR}/plugged"
 
-plugins="\
+plugins_git_repo="\
   https://github.com/zsh-users/zsh-history-substring-search.git \
   https://github.com/dracula/zsh.git                            \
   https://github.com/romkatv/powerlevel10k.git                  \
@@ -99,6 +99,7 @@ plugins="\
 
 # === KEYS ===
 in_deps=0
+create_bkp=0
 in_dotfiles=0
 in_plugins=0
 change_shell=0
@@ -108,14 +109,15 @@ change_shell=0
 _in_from_apt(){
   
   # installPkgs: put all packages in a single line
-  in_pkgs="$(printf "%s" "${*}" | tr '\n' ' ')"                                                          
+  in_pkgs="$(printf "%s" "${*}" | tr '\n' ' ')"
+  echo "$in_pkgs"
   if [ $(id --user) -ne 0 ]; then
     
     printf "\nYou need root acces in order to install ${in_pkgs} from apt\n\n"
   
     # Regular users can not install from apt
     #su root -c "apt install ${in_pkgs} -y"
-    sudo apt install "${in_pkgs}" -y
+    sudo apt install ${in_pkgs} -y
 
   else # user is either root or executed with sudo
     apt install ${in_pkgs} -y
@@ -127,7 +129,7 @@ _in_from_apt(){
 _set_zdotdir(){
 
   grep 'ZDOTDIR' "$global_zshenv" >/dev/null
-  if [ "$?" -eq 0 ]; then
+  if [ "$?" -ne 0 ]; then
   
     if [ $(id --user) -ne 0 ]; then
       
@@ -146,11 +148,10 @@ _set_zdotdir(){
 
 }
 
-_backup(){
+_create_backup(){
   bkp_src="\
     /home/$_USER/.*zsh* \
-    /home/$_USER/*zsh*   \
-    /home/$_USER/.config/*zsh*  \
+    /home/$_USER/.config/zsh  \
 "
   bkp_dest="/home/$_USER/.config/bkp/zsh-$(date '+%Y-%m-%d %H:%M:%S')"
   mkdir -p "$bkp_dest"
@@ -168,41 +169,47 @@ _in_dotfiles()(
 	
   cd "$ZDOTDIR"
 
-  for dotfile in "$@"; do
-    curl -4fLO "$dotfile_src_link"
+  for dotfile in "$*"; do
+    curl -4fLO $dotfile >/dev/null
   done
 
   return "${?}"
 )
 
-_in_plugins(){
+_in_plugins()(
   
-	[ -d "$ZPLUGDIR" ] || mkdir -p "$ZPLUGDIR"
+	[ -d "$ZPLUGDIR" ] && mkdir -p "$ZPLUGDIR"
+  
+  cd "$ZPLUGDIR"
 
-	for plugin in "$1"; do
-    git clone "$plugin" "$ZPLUGDIR"
+	for plugin in $*; do
+    echo $plugin
+    git git-force-clone $plugin
   done
 
   return "${?}"
-}
+)
 
 # =========================================================
 # === ENTRY POINT ===
 _main(){
   
-  _installFromApt 'zsh' && _set_zdotdir
- 
+  _in_from_apt zsh && _set_zdotdir
+
   # Install Dependencies
-  [ "$in_deps" -eq 1 ] && _installFromApt "${dependencies}"
+  [ "$in_deps" -eq 1 ] && _in_from_apt ${dependencies}
+  
+  # create backup
+  #[ "$create_bkp" -eq 1 ] && _create_backup
   
   # Install Dotfile
-  [ "$instDotfile" -eq 1 ] && _in_dotfiles
+  #[ "$in_dotfiles" -eq 1 ] && _in_dotfiles ${dotfiles_src_links}
   
   # Install Plugins listed on dotfile
-  [ "$in_plugins" -eq 1 ] && _in_plugins
+  [ "$in_plugins" -eq 1 ] && _in_plugins ${plugins_git_repo}
   
   # Change the user's default shell
-  [ "$change_shell" -eq 1 ] && _in_plugins
+  [ "$change_shell" -eq 1 ] && sudo usermod --shell $(which zsh) "$_USER"
 
   exit 0
 }
@@ -221,12 +228,14 @@ while [ -n "${1}" ]; do
                                 in_plugins=1            ;;
             "-d"|"--dotfiles"   )
                                 in_deps=1
+                                create_bkp=1
                                 in_dotfiles=1
                                 in_plugins=1            ;;
             "-I"|"--install-all")
                                 in_deps=1
-                                in_plugins=1
+                                create_bkp=1
                                 in_dotfiles=1
+                                in_plugins=1
                                 change_shell=1
                                 _main                   ;;
             "-h"|"--help"       ) _usage       ; exit 0 ;;
