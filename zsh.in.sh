@@ -2,10 +2,10 @@
 # ___________________________________________________________________
 #                                                                    |
 # TITLE        : zsh.in.sh                                           |
-# DESCRIPTION  : Installs Zshell, some plugins and a dotfile        |
+# DESCRIPTION  : Installs Zshell, some plugins and a dotfile         |
 # AUTHOR       : Wilson Faustino <open source (a) wfaustino dev>     |
-# DATE         : 2020-dez-28                                         |
-# VERSION      : 1.0.0                                               |
+# DATE         : 2021-jan-07                                         |
+# VERSION      : 2.0.0                                               |
 # DEPENDENCIES : git curl                                            |
 # NOTES        : Tested on Debian Buster and Raspberry Pi OS Buster; |
 #                but should work on any Debian based Distribution    |
@@ -15,12 +15,12 @@
 #=== ABOUT ===
 
 itSelfName="${0##*/}"
-itSelfVersion="1.0.0"
-itSelfDate='2020-dec-28'
+itSelfVersion="2.0.0"
+itSelfDate='2021-jan-07'
 
 authorName='Wilson Faustino'
 authorWebsite='wmfaustino dev'
-authorEmail='open source@wmfaustino dev'
+authorEmail='open source (a) wmfaustino dev'
 
 # Shows all options provided by this program ---------------
 _usage(){
@@ -31,14 +31,13 @@ _usage(){
     
     OPTIONS:
 
-      -z, --zshell         Installs Zshell and sets ZDOTDIR
-      -Z, --zshell-default Installs Zshell, sets ZDOTDIR and makes it the default shell
-      -p, --plugins       Installs Zshell, plugins and sets ZDOTDIR
-      -d, --dotfiles       Installs Zshell, dotfiles and sets ZDOTDIR
+      -z, --zdotdir      Installs Zshell and sets ZDOTDIR
+      -p, --plugins      Installs Zshell, plugins and sets ZDOTDIR
+      -d, --dotfiles     Installs Zshell, dotfiles and sets ZDOTDIR
+      -Z, --zsh-default  Installs Zshell, sets ZDOTDIR and makes it the default shell
       
-      -I, --install-all    Installs Zshell, dotfiles, plugins, sets ZDOTDIR and makes it the default shell
-      -V, --version        Prints version
-      -h, --help           Prints this message
+      -I, --install-all  Installs Zshell, dotfiles, plugins, sets ZDOTDIR and makes it the default shell
+      -h, --help         Prints this message
     
     EXAMPLES:
       
@@ -57,12 +56,11 @@ EOF
 
 #=== INITIAL TESTS===
 
-#--- root access
-[ $(id --user) -ne 0 ] && printf "\n%s\n" "You don't have root access" && exit 100
-
 #--- script is running with argument(s)
 [ "${#}" -eq 0 ] && _usage
 
+#--- root access
+[ $(id --user) -ne 0 ] && printf "\n%s\n" "You don't have root access" && exit 100
 
 ###=== VARIABLES ===
 
@@ -124,41 +122,65 @@ _create_backup(){
   mkdir -p "$bkp_dest"
 
   for src in $bkp_src; do
+
     [ -e "$src" ] && {
       cp -RbLp "$src" "$bkp_dest" && rm -rf "$src"
       printf "Backup: %s\n\n" "${bkp_dest}/${src##*/}"
     }
-    
   done
+
   return "$?"
+}
+
+_apt_install(){
+
+   which "$1" >/dev/null
+  
+  [ "$?" -eq 0 ] || {
+    printf "\n%s\n" "Instaling $1"
+    apt install "$1" -y >/dev/null
+  }
+
+  return $?
 }
 
 _in_dotfiles()(
 
-  sudo apt install curl >/dev/null
+  _apt_install curl
 
 	[ -d "$ZDOTDIR" ] || mkdir -p "$ZDOTDIR"
 	
   cd "$ZDOTDIR"
 
+  printf "\n%s\n" "Setting up dotfiles"
+  
   for dotfile in $*; do
-    curl -4fLO $dotfile >/dev/null
+    curl -4fLO --silent $dotfile >/dev/null
   done
+
+  chown -f -R "${_USER}:${_USER}" "$ZDOTDIR"
 
   return "${?}"
 )
 
 _in_plugins()(
 
-  sudo apt install git >/dev/null
+  _apt_install git
 
 	[ -d "$ZPLUGDIR" ] || mkdir -p "$ZPLUGDIR"
   
   cd "$ZPLUGDIR"
 
-	for plugin in $*; do
-    git clone $plugin
+  printf "\n%s\n" "Installing zsh plugin:"
+	
+  for plugin in $*; do
+
+    printf "%s\n" "$plugin"
+    git clone --quiet $plugin >/dev/nul
+  
   done
+
+  chown -f -R "${_USER}:${_USER}" "$ZPLUGDIR"
 
   return "${?}"
 )
@@ -167,7 +189,7 @@ _in_plugins()(
 # === ENTRY POINT ===
 _main(){
   
-  sudo apt install zsh && _set_zdotdir
+  _apt_install zsh && _set_zdotdir
   
   # Install Dotfile
   if [ "$in_dotfiles" -eq 1 ]; then
@@ -182,7 +204,7 @@ _main(){
   fi
 
   # Change the user's default shell
-  [ "$change_shell" -eq 1 ] && sudo usermod --shell $(which zsh) "$_USER"
+  [ "$change_shell" -eq 1 ] && usermod --shell $(which zsh) "$_USER"
 
   exit 0
 }
@@ -198,7 +220,7 @@ while [ -n "${1}" ]; do
             "-Z"|"--zsh-default" ) change_shell=1 ;;
             "-I"|"--install-all" )
                                    in_dotfiles=1
-                                   in_plugins=2
+                                   in_plugins=1
                                    change_shell=1
                                    _main          ;;
             "-h"|"--help"        ) _usage; exit 0 ;;
