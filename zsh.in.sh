@@ -55,21 +55,16 @@ EOF
   exit 0
 }
 
-# Prints version's number, date and author ------------------
-_printVersion(){
+#=== INITIAL TESTS===
 
-  cat <<EOF
-    ${itSelfName} - version: ${itSelfVersion}
-    updated: ${itSelfDate} by ${authorName}
-EOF
+#--- root access
+[ $(id --user) -ne 0 ] && printf "\n%s\n" "You don't have root access" && exit 100
 
-  exit 0
-}
+#--- script is running with argument(s)
+[ "${#}" -eq 0 ] && _usage
 
-#=== VARIABLES ===
 
-#--- dependencies
-dependencies="git curl"
+###=== VARIABLES ===
 
 #--- config
 global_zshenv="/etc/zsh/zshenv"
@@ -77,13 +72,12 @@ zdotdir='$HOME/.config/zsh'
 
 _USER="${SUDO_USER:-$USER}"
 
-#--- dotfile
-ZDOTDIR="/home/${_USER}/.config/zsh"
+#--- HOME
+HOME="/home/${_USER}"
+[ "$_USER" = 'root' ] && HOME='/root'
 
-dotfiles_src_links="\
-  https://raw.githubusercontent.com/wmfaustino/dotfiles/master/.config/zsh/.zshrc    \
-  https://raw.githubusercontent.com/wmfaustino/dotfiles/master/.config/zsh/.p10k.zsh \
-"
+#--- ZDOTDIR
+ZDOTDIR="${HOME}/.config/zsh"
 
 #--- plugins
 ZPLUGDIR="${ZDOTDIR}/plugged"
@@ -95,81 +89,59 @@ plugins_git_repo="\
   https://github.com/zsh-users/zsh-autosuggestions.git          \
   https://github.com/zdharma/fast-syntax-highlighting.git       \
 "
+
+#--- dotfiles
+dotfiles_src_links="\
+  https://raw.githubusercontent.com/wmfaustino/dotfiles/master/.config/zsh/.zshrc    \
+  https://raw.githubusercontent.com/wmfaustino/dotfiles/master/.config/zsh/.p10k.zsh \
+"
+
 # =========================================================
 
 # === KEYS ===
-in_deps=0
-create_bkp=0
 in_dotfiles=0
 in_plugins=0
 change_shell=0
 # =========================================================
 
 # === FUNCTIONS ===
-_in_from_apt(){
-  
-  # installPkgs: put all packages in a single line
-  in_pkgs="$(printf "%s" "${*}" | tr '\n' ' ')"
-  echo "$in_pkgs"
-  if [ $(id --user) -ne 0 ]; then
-    
-    printf "\nYou need root acces in order to install ${in_pkgs} from apt\n\n"
-  
-    # Regular users can not install from apt
-    #su root -c "apt install ${in_pkgs} -y"
-    sudo apt install ${in_pkgs} -y
-
-  else # user is either root or executed with sudo
-    apt install ${in_pkgs} -y
-  fi
-
-	return "${?}"
-}
 
 _set_zdotdir(){
 
-  grep 'ZDOTDIR' "$global_zshenv" >/dev/null
-  if [ "$?" -ne 0 ]; then
-  
-    if [ $(id --user) -ne 0 ]; then
-      
-      printf "\nYou need root acces in order to se global environment variables\n\n"
-    
-      #echo ZDOTDIR=\"${zdotdir}\" | su root -c "tee -a $global_zshenv"
-      echo ZDOTDIR=\"${zdotdir}\" | sudo tee -a "$global_zshenv"
+  grep '.config/zsh' "$global_zshenv" >/dev/null
 
-    else # user is either root or executed with sudo
-     #echo "ZDOTDIR=${zdotdir}" >> "$global_zshenv"
-      echo ZDOTDIR=\"${zdotdir}\" | tee -a "$global_zshenv"
-    fi
-  fi
+  [ "$?" -ne 0 ] && echo 'ZDOTDIR='\"${zdotdir}\" | tee -a "$global_zshenv"
 
   return "$?"
 
 }
 
 _create_backup(){
-  bkp_src="\
-    /home/$_USER/.*zsh* \
-    /home/$_USER/.config/zsh  \
-"
-  bkp_dest="/home/$_USER/.config/bkp/zsh-$(date '+%Y-%m-%d %H:%M:%S')"
+
+  bkp_src="${@}"
+  bkp_dest="$HOME/.config/bkp/zsh-$(date '+%Y-%m-%d %H:%M:%S')"
+
   mkdir -p "$bkp_dest"
 
-  for src in $bkp_src; do 
-   cp -RbLp "$src" "$bkp_dest" && rm -rf "$src"
-  printf "Dotfile Backup: %s\n\n" "${bkp_dest}/${src##*/}"
+  for src in $bkp_src; do
+    [ -e "$src" ] && {
+      cp -RbLp "$src" "$bkp_dest" && rm -rf "$src"
+      printf "Backup: %s\n\n" "${bkp_dest}/${src##*/}"
+    }
+    
   done
-
+  return "$?"
 }
 
 _in_dotfiles()(
+
+  sudo apt install curl >/dev/null
 
 	[ -d "$ZDOTDIR" ] || mkdir -p "$ZDOTDIR"
 	
   cd "$ZDOTDIR"
 
-  for dotfile in "$*"; do
+  for dotfile in $*; do
     curl -4fLO $dotfile >/dev/null
   done
 
@@ -177,14 +149,15 @@ _in_dotfiles()(
 )
 
 _in_plugins()(
-  
-	[ -d "$ZPLUGDIR" ] && mkdir -p "$ZPLUGDIR"
+
+  sudo apt install git >/dev/null
+
+	[ -d "$ZPLUGDIR" ] || mkdir -p "$ZPLUGDIR"
   
   cd "$ZPLUGDIR"
 
 	for plugin in $*; do
-    echo $plugin
-    git git-force-clone $plugin
+    git clone $plugin
   done
 
   return "${?}"
@@ -194,20 +167,20 @@ _in_plugins()(
 # === ENTRY POINT ===
 _main(){
   
-  _in_from_apt zsh && _set_zdotdir
-
-  # Install Dependencies
-  [ "$in_deps" -eq 1 ] && _in_from_apt ${dependencies}
-  
-  # create backup
-  #[ "$create_bkp" -eq 1 ] && _create_backup
+  sudo apt install zsh && _set_zdotdir
   
   # Install Dotfile
-  #[ "$in_dotfiles" -eq 1 ] && _in_dotfiles ${dotfiles_src_links}
-  
-  # Install Plugins listed on dotfile
-  [ "$in_plugins" -eq 1 ] && _in_plugins ${plugins_git_repo}
-  
+  if [ "$in_dotfiles" -eq 1 ]; then
+    _create_backup "$HOME/.*zsh* $HOME/*zsh* ${ZDOTDIR}"
+    _in_dotfiles ${dotfiles_src_links}
+  fi
+
+  # Install Plugins
+  if [ "$in_plugins" -eq 1 ]; then
+    _create_backup "$ZPLUGDIR"
+    _in_plugins ${plugins_git_repo}
+  fi
+
   # Change the user's default shell
   [ "$change_shell" -eq 1 ] && sudo usermod --shell $(which zsh) "$_USER"
 
@@ -217,33 +190,21 @@ _main(){
 # =========================================================
 # === STARTS INSTALLATION ===
 
-[ "${#}" -eq 0 ] && _usage
-
 while [ -n "${1}" ]; do
         case "${1}" in
-            "-z"|"--zshell"        ) _main              ;;
-            "-Z"|"--zshell-default") change_shell=1     ;;
-            "-p"|"--plugins"   )
-                                in_deps=1
-                                in_plugins=1            ;;
-            "-d"|"--dotfiles"   )
-                                in_deps=1
-                                create_bkp=1
-                                in_dotfiles=1
-                                in_plugins=1            ;;
-            "-I"|"--install-all")
-                                in_deps=1
-                                create_bkp=1
-                                in_dotfiles=1
-                                in_plugins=1
-                                change_shell=1
-                                _main                   ;;
-            "-h"|"--help"       ) _usage       ; exit 0 ;;
-            "-V"|"--version"    ) _printVersion; exit 0 ;;
-            *                   )
-                                "Invalid option. ${1}" ;
-                                _usage
-                                exit 1                  ;;
+            "-z"|"--zdotdir"     ) :              ;;
+            "-p"|"--plugins"     ) in_plugins=1   ;;
+            "-d"|"--dotfiles"    ) in_dotfiles=1  ;;
+            "-Z"|"--zsh-default" ) change_shell=1 ;;
+            "-I"|"--install-all" )
+                                   in_dotfiles=1
+                                   in_plugins=2
+                                   change_shell=1
+                                   _main          ;;
+            "-h"|"--help"        ) _usage; exit 0 ;;
+            *                    )
+                                  echo "Invalid option. ${1}"
+                                  exit 1          ;;
         esac
       shift
 done
