@@ -8,9 +8,31 @@
 
 #--- do not run with sudo
 
-
 ###=== VARIABLES ===
-ASDF_DATA_DIR="${HOME}/.asdf"
+ASDF_DATA_DIR="${ASDF_DATA_DIR:-$HOME/.asdf}"
+
+# --- bash
+_bashrc="${HOME}/.bashrc"
+
+bashrc_files_to_source=(
+    "${ASDF_DATA_DIR}/asdf.sh"
+    "${ASDF_DATA_DIR}/completions/asdf.bash"
+)
+
+# --- zsh
+  _zshrc="${ZDOTDIR:-$HOME/.config/zsh}/.zshrc"
+
+  zsh_files_to_source=(
+    "${ASDF_DATA_DIR}/asdf.sh"
+  )
+
+  zsh_completions=(
+    '# append completions to fpath'
+    'fpath=(${ASDF_DATA_DIR}/completions $fpath)'
+    '# initialise completions with ZSH''s compinit'
+    'autoload -Uz compinit'
+    'compinit'
+    )
 
 declare -A ASDF_PLUGINS=(
 [foo]=bar
@@ -19,44 +41,31 @@ declare -A ASDF_PLUGINS=(
 
 function _in_asdf(){
 
-  git clone https://github.com/asdf-vm/asdf.git "${ASDF_DATA_DIR%/.asdf}" 
+  # clone the whole repo
+  git clone https://github.com/asdf-vm/asdf.git "${ASDF_DATA_DIR%/.asdf}"
   cd "$ASDF_DATA_DIR"
-
+  # checkout the latest branch
   git checkout "$(git describe --abbrev=0 --tags)"
 
+  return "$?"
 }
 
+function _setup_config_file(){
 
-function _setup_bash(){
+  local -r config_file="$1"
+  shift
 
-  local _bashrc="${HOME}/.bashrc"
-
-  local -a asdf_bash=(
-    asdf.sh
-    completions/asdf.bash
-  )
-
-  for script in "${asdf_bash[@]}"; do
-     echo '. "$ASDF_DATA_DIR'/"${script}"\" >> "$_bashrc"
+  for file in "$@"; do
+     echo '. "${file}'\" >> "$config_file"
   done
 
   return "$?"
 }
-bash e zsh
-. $ASDF_DATA_DIR/asdf.sh
+
+
 
 function _setup_zsh(){
 
-  local _zshrc="${ZDOTDIR}/.zshrc"
-
-  local -a asdf_zsh=(
-    asdf.sh
-    '# append completions to fpath'
-    'fpath=(${ASDF_DATA_DIR}/completions $fpath)'
-    '# initialise completions with ZSH''s compinit'
-    'autoload -Uz compinit'
-    'compinit'
-  )
 
   for script in "${asdf_zsh[@]}"; do
      echo '. "$ASDF_DATA_DIR'/"${script}"\" #>> "$_bashrc"
@@ -64,6 +73,8 @@ function _setup_zsh(){
 
   return "$?"
 }
+(zsh && echo $ZDOTDIR)
+exit
 _setup_zsh
 exit
 
