@@ -9,21 +9,25 @@
 #--- do not run with sudo
 
 ###=== VARIABLES ===
-ASDF_DATA_DIR="${ASDF_DATA_DIR:-$HOME/.asdf}"
 
+# --- asdf default dir
+: ${ASDF_DATA_DIR:='$HOME/.asdf'}
+echo "$ASDF_DATA_DIR"
+exit
 # --- bash
 _bashrc="${HOME}/.bashrc"
 
-bashrc_files_to_source=(
-    "${ASDF_DATA_DIR}/asdf.sh"
-    "${ASDF_DATA_DIR}/completions/asdf.bash"
+declare -arg bashrc_files_to_source=(
+  .\ "${ASDF_DATA_DIR}/asdf.sh"
+  '. "${ASDF_DATA_DIR}/completions/asdf.bash"'
 )
 
+# exec para pegar a ZDOTDIR
 # --- zsh
   _zshrc="${ZDOTDIR:-$HOME/.config/zsh}/.zshrc"
 
-  zsh_files_to_source=(
-    "${ASDF_DATA_DIR}/asdf.sh"
+  zshrc_files_to_source=(
+    . "${ASDF_DATA_DIR}/asdf.sh"
   )
 
   zsh_completions=(
@@ -56,13 +60,15 @@ function _setup_config_file(){
   shift
 
   for file in "$@"; do
-     echo '. "${file}'\" >> "$config_file"
+    echo "${file}" #>> "$config_file"
   done
 
   return "$?"
 }
 
-
+ _setup_config_file "$_bashrc" "${bashrc_files_to_source[@]}"
+_setup_config_file "$_zshrc" "${zshrc_files_to_source[@]}"
+exit
 
 function _setup_zsh(){
 
