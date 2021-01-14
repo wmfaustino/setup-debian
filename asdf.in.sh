@@ -12,36 +12,27 @@
 
 # --- asdf default dir
 : ${ASDF_DATA_DIR:='$HOME/.asdf'}
-echo "$ASDF_DATA_DIR"
-exit
+
 # --- bash
 _bashrc="${HOME}/.bashrc"
 
 declare -arg bashrc_files_to_source=(
-  .\ "${ASDF_DATA_DIR}/asdf.sh"
-  '. "${ASDF_DATA_DIR}/completions/asdf.bash"'
+  .\ \""${ASDF_DATA_DIR}/asdf.sh"\"
+  .\ \""${ASDF_DATA_DIR}/completions/asdf.bash"\"
 )
 
 # exec para pegar a ZDOTDIR
 # --- zsh
-  _zshrc="${ZDOTDIR:-$HOME/.config/zsh}/.zshrc"
+  _zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
 
-  zshrc_files_to_source=(
-    . "${ASDF_DATA_DIR}/asdf.sh"
-  )
-
-  zsh_completions=(
+declare -arg  zshrc_files_to_source=(
+    .\ \""${ASDF_DATA_DIR}/asdf.sh"\"
     '# append completions to fpath'
-    'fpath=(${ASDF_DATA_DIR}/completions $fpath)'
+    "fpath=(${ASDF_DATA_DIR}/completions $fpath)"
     '# initialise completions with ZSH''s compinit'
     'autoload -Uz compinit'
     'compinit'
-    )
-
-declare -A ASDF_PLUGINS=(
-[foo]=bar
-[baz]=bu
-)
+  )
 
 function _in_asdf(){
 
@@ -66,41 +57,33 @@ function _setup_config_file(){
   return "$?"
 }
 
- _setup_config_file "$_bashrc" "${bashrc_files_to_source[@]}"
-_setup_config_file "$_zshrc" "${zshrc_files_to_source[@]}"
+ # _setup_config_file "$_bashrc" "${bashrc_files_to_source[@]}"
+# _setup_config_file "$_zshrc" "${zshrc_files_to_source[@]}"
+
+echo $ASDF_DATA_DIR
+
 exit
 
-function _setup_zsh(){
 
 
-  for script in "${asdf_zsh[@]}"; do
-     echo '. "$ASDF_DATA_DIR'/"${script}"\" #>> "$_bashrc"
-  done
+# Plugins
+# https://asdf-vm.com/#/plugins-all
 
-  return "$?"
+_in_asdf_nodejs(){
+  # https://github.com/asdf-vm/asdf-nodejs
+
+  local -r dependencies="dirmngr gpg curl"
+  local -r asdf_nodejs="https://github.com/asdf-vm/asdf-nodejs.git"
+
+  sudo apt install "$dependencies"
+
+  asdf plugin-add nodejs "$asdf_nodejs"
+
+  bash -c '${ASDF_DATA_DIR:=$HOME/.asdf}/plugins/nodejs/bin/import-release-team-keyring'
+
 }
-(zsh && echo $ZDOTDIR)
-exit
-_setup_zsh
-exit
 
 
-
-
-Plugins
-https://asdf-vm.com/#/plugins-all
-
-nodejs
-
-https://github.com/asdf-vm/asdf-nodejs
-
-apt-get install dirmngr
-apt-get install gpg
-apt-get install curl
-
-asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-
-bash -c '${ASDF_DATA_DIR:=$HOME/.asdf}/plugins/nodejs/bin/import-release-team-keyring'
 
 go
 
