@@ -101,13 +101,38 @@ declare -arg source_into_zshrc=(
   )
 # =========================================================
 
+# === KEYS ===
+# --- asdf
+declare -Ag _in_key=(
+  [in_asdf]=0
+  [in_plugins]=0
+)
+
+# --- setup shell
+declare -Ag _setup_shell_keys=(
+  [setup_bash]=0
+  [setup_zsh]=0
+)
+
+# --- add plugins
+declare -Ag _add_plugin_keys=(
+  [golang]=0
+  [lua]=0
+  [neovim]=0
+  [nodejs]=0
+  [ruby]=0
+  [rust]=0
+  [python]=0
+)
+# =========================================================
+
 # === PLUGINS ===
 # https://asdf-vm.com/#/plugins-all
 
 # --- golang
 # https://github.com/kennyp/asdf-golang
 # After using go get to install a package you need to run asdf reshim golang to get any new shims.
-declare -Arg _golang=(
+declare -Arg golang=(
   [dependencies]="coreutils curl"
   [repo]="https://github.com/kennyp/asdf-golang.git"
 )
@@ -130,15 +155,6 @@ declare -Arg nodejs=(
   )
 # =========================================================
 
-# --- python
-# https://github.com/danhper/asdf-python
-# https://github.com/pyenv/pyenv/wiki#suggested-build-environment
-# If you use pip to install a module like ipython that has binaries. You will need to run asdf reshim python for the binary to be in your path.
-declare -arg python=(
-  [dependencies]='make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev'
-)
-# =========================================================
-
 # --- ruby
 # https://github.com/asdf-vm/asdf-ruby
 declare -Arg ruby=(
@@ -151,6 +167,15 @@ declare -Arg ruby=(
 # After you have installed rust, do NOT follow the directions it outputs to update your PATH -- asdf's shim will handle that for you!
 declare -Arg rust=(
   [repo]="https://github.com/code-lever/asdf-rust.git"
+)
+# =========================================================
+
+# --- python
+# https://github.com/danhper/asdf-python
+# https://github.com/pyenv/pyenv/wiki#suggested-build-environment
+# If you use pip to install a module like ipython that has binaries. You will need to run asdf reshim python for the binary to be in your path.
+declare -Arg python=(
+  [dependencies]="make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev"
 )
 # =========================================================
 
@@ -173,7 +198,7 @@ function _setup_config_file(){
   shift
 
   for file in "$@"; do
-    echo "${file}" #>> "$config_file"
+    echo "${file}" >> "$config_file"
   done
 
   return "$?"
@@ -183,18 +208,27 @@ function _in_asdf_plugin(){
 
   local -n _plugin="$1"
 
-  sudo apt install ${_plugin[dependencies]} -y
+  sudo apt install -qq -y ${_plugin[dependencies]} > /dev/null 2>&1
 
-  asdf plugin-add "$1" "${_plugin[repo]}"
-echo $?
+  asdf plugin remove "$1"
+  asdf plugin add "$1" "${_plugin[repo]}"
+
   [[ ! -z "${_plugin[keys]}" ]] && bash -c "${_plugin[keys]}"
+
+  asdf install "$1" latest
+
   echo $?
 }
 
 # _setup_config_file "$_bashrc" "${source_into_bashrc[@]}"
 # _setup_config_file "$_zshrc" "${source_into_zshrc[@]}"
 # _in_asdf_plugin nodejs
-_in_asdf_plugin python
+ _in_asdf_plugin golang
+ _in_asdf_plugin lua
+ _in_asdf_plugin nodejs
+ _in_asdf_plugin ruby
+ _in_asdf_plugin rust
+ _in_asdf_plugin python
 exit
 # echo $ASDF_DATA_DIR
 
@@ -225,21 +259,48 @@ _main(){
 # =========================================================
 # === STARTS INSTALLATION ===
 
+declare -Ag _in_key=(
+  [in_asdf]=0
+  [setup_bash]=0
+  [setup_zsh]=0
+  [add_golang]=0
+  [add_lua]=0
+  [add_neovim]=0
+  [add_nodejs]=0
+  [add_ruby]=0
+  [add_rust]=0
+  [add_python]=0
+  [in_latest]=0
+)
 while [ -n "${1}" ]; do
         case "${1}" in
-            "-z"|"--zdotdir"     ) :              ;;
-            "-p"|"--plugins"     ) in_plugins=1   ;;
-            "-d"|"--dotfiles"    ) in_dotfiles=1  ;;
-            "-Z"|"--zsh-default" ) change_shell=1 ;;
-            "-I"|"--install-all" )
-                                   in_dotfiles=1
-                                   in_plugins=1
-                                   change_shell=1
-                                   _main          ;;
-            "-h"|"--help"        ) _usage; exit 0 ;;
-            *                    )
-                                  echo "Invalid option. ${1}"
-                                  exit 1          ;;
+            "--asdf"      ) "${_in_key[in_asdf]}"=1   ;;
+            "--bash"      ) "${_in_key[setup_bash]}"=1;;
+            "--zsh"       ) "${_in_key[setup_zsh]}"=1 ;;
+            "--all-shells")
+                        "${_in_key[setup_bash]}"=1
+                        "${_in_key[setup_zsh]}"=1     ;;
+            "--golang"    ) "${_in_key[add_golang]}"=1;;
+            "--lua"       ) "${_in_key[add_lua]}"=1   ;;
+            "--neovim"    ) "${_in_key[add_neovim]}"=1;;
+            "--nodejs"    ) "${_in_key[add_nodejs]}"=1;;
+            "--ruby"      ) "${_in_key[add_ruby]}"=1  ;;
+            "--rust"      ) "${_in_key[add_rust]}"=1  ;;
+            "--python"    ) "${_in_key[add_python]}"=1;;
+            "--in-latest" ) "${_in_key[in_latest]}"=1 ;;
+            "--in-all"    )
+                        "${_in_key[in_latest]}"=1
+                        "${_in_key[add_golang]}"=1
+                        "${_in_key[add_lua]}"=1
+                        "${_in_key[add_neovim]}"=1
+                        "${_in_key[add_nodejs]}"=1
+                        "${_in_key[add_ruby]}"=1
+                        "${_in_key[add_rust]}"=1
+                        "${_in_key[add_python]}"=1
+            "--help"      ) _usage; exit 0            ;;
+            *             )
+                        echo "Invalid option. ${1}"
+                        exit 1                        ;;
         esac
       shift
 done
