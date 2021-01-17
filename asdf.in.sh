@@ -74,44 +74,18 @@ EOF
 
 #--- do not run with sudo
 
-###=== VARIABLES ===
-
-# --- asdf default dir
-ASDF_DATA_DIR="$HOME/.asdf"
-
-# --- bash
-declare -rg _bashrc="${HOME}/.bashrc"
-
-declare -arg source_into_bashrc=(
-  .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-  .\ \"'${ASDF_DATA_DIR}'/completions/asdf.bash\"
-)
-
-# exec para pegar a ZDOTDIR
-# --- zsh
-declare -rg _zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
-
-declare -arg source_into_zshrc=(
-    .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-    '# append completions to fpath'
-    "fpath=(${ASDF_DATA_DIR}/completions \$fpath)"
-    '# initialise completions with ZSH''s compinit'
-    'autoload -Uz compinit'
-    'compinit'
-  )
-# =========================================================
-
 # === KEYS ===
-# --- asdf
+# --- asdf and latest version
 declare -Ag _in_key=(
-  [in_asdf]=0
-  [in_plugins]=0
+  [asdf]=0
+  [plugin_latest]=0
+  [plugin_reinstall]=0
 )
 
 # --- setup shell
 declare -Ag _setup_shell_keys=(
-  [setup_bash]=0
-  [setup_zsh]=0
+  [bashrc]=0
+  [zshrc]=0
 )
 
 # --- add plugins
@@ -126,11 +100,45 @@ declare -Ag _add_plugin_keys=(
 )
 # =========================================================
 
-# === PLUGINS ===
+ for plugin in "${!_add_plugin_keys[@]}"; do
+   echo _add_plugin_keys[$plugin]=1
+   echo ${_add_plugin_keys[$plugin]}
+ done
+
+ for plugin in "${_add_plugin_keys[@]}"; do
+   echo $plugin
+  done
+exit
+###=== VARIABLES ===
+
+# --- asdf default dir
+ASDF_DATA_DIR="$HOME/.asdf"
+
+# --- bash
+declare -rg bashrc="${HOME}/.bashrc"
+
+declare -arg source_into_bashrc=(
+  .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
+  .\ \"'${ASDF_DATA_DIR}'/completions/asdf.bash\"
+)
+
+# --- zsh
+declare -rg zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
+
+declare -arg source_into_zshrc=(
+    .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
+    '# append completions to fpath'
+    "fpath=(${ASDF_DATA_DIR}/completions \$fpath)"
+    '# initialise completions with ZSH''s compinit'
+    'autoload -Uz compinit'
+    'compinit'
+)
+# =========================================================
+
+# === ASDF PLUGINS ===
 # https://asdf-vm.com/#/plugins-all
 
 # --- golang
-# https://github.com/kennyp/asdf-golang
 # After using go get to install a package you need to run asdf reshim golang to get any new shims.
 declare -Arg golang=(
   [dependencies]="coreutils curl"
@@ -139,15 +147,21 @@ declare -Arg golang=(
 # =========================================================
 
 # --- lua
-# https://github.com/Stratus3D/asdf-lua
 declare -Arg lua=(
   [dependencies]="linux-headers-$(uname -r) build-essential"
   [repo]="https://github.com/Stratus3D/asdf-lua.git"
 )
 # =========================================================
 
+# --- neovim
+declare -Arg neovim=(
+  [dependencies]="dirmngr gpg curl"
+  [repo]="https://github.com/asdf-vm/asdf-nodejs.git"
+  [keys]='${ASDF_DATA_DIR:=$HOME/.asdf}/plugins/nodejs/bin/import-release-team-keyring'
+  )
+# =========================================================
+
 # --- nodejs
-# https://github.com/asdf-vm/asdf-nodejs
 declare -Arg nodejs=(
   [dependencies]="dirmngr gpg curl"
   [repo]="https://github.com/asdf-vm/asdf-nodejs.git"
@@ -156,14 +170,12 @@ declare -Arg nodejs=(
 # =========================================================
 
 # --- ruby
-# https://github.com/asdf-vm/asdf-ruby
 declare -Arg ruby=(
   [repo]="https://github.com/asdf-vm/asdf-ruby.git"
 )
 # =========================================================
 
 # --- rust
-# https://github.com/code-lever/asdf-rust
 # After you have installed rust, do NOT follow the directions it outputs to update your PATH -- asdf's shim will handle that for you!
 declare -Arg rust=(
   [repo]="https://github.com/code-lever/asdf-rust.git"
@@ -180,12 +192,14 @@ declare -Arg python=(
 # =========================================================
 
 # === FUNCTIONS ===
-
 function _in_asdf(){
+
+  [[ -d "$ASDF_DATA_DIR" ]] && mv "$ASDF_DATA_DIR" ~/.tool-versions /tmp
 
   # clone the whole repo
   git clone https://github.com/asdf-vm/asdf.git "${ASDF_DATA_DIR}"
   cd "$ASDF_DATA_DIR"
+
   # checkout the latest branch
   git checkout "$(git describe --abbrev=0 --tags)"
 
@@ -215,43 +229,35 @@ function _in_asdf_plugin(){
 
   [[ ! -z "${_plugin[keys]}" ]] && bash -c "${_plugin[keys]}"
 
-  asdf install "$1" latest
+  (( "${_in_key[plugin_latest]}" == 1 )) && asdf install "$1" latest
 
   echo $?
 }
-
-# _setup_config_file "$_bashrc" "${source_into_bashrc[@]}"
-# _setup_config_file "$_zshrc" "${source_into_zshrc[@]}"
-# _in_asdf_plugin nodejs
- _in_asdf_plugin golang
- _in_asdf_plugin lua
- _in_asdf_plugin nodejs
- _in_asdf_plugin ruby
- _in_asdf_plugin rust
- _in_asdf_plugin python
-exit
-# echo $ASDF_DATA_DIR
-
 # =========================================================
+
 # === ENTRY POINT ===
 _main(){
 
-  _apt_install zsh && _set_zdotdir
+  # --- Install asdf
+  (( "${_in_key[asdf]}" == 1 )) && _in_asdf
 
-  # Install Dotfile
-  if [ "$in_dotfiles" -eq 1 ]; then
-    _create_backup "$HOME/.*zsh* $HOME/*zsh* ${ZDOTDIR}"
-    _in_dotfiles ${dotfiles_src_links}
-  fi
+  # --- Setup shells
+  for shell in "${!_setup_shell_keys[@]}"; do
 
-  # Install Plugins
-  if [ "$in_plugins" -eq 1 ]; then
-    _create_backup "$ZPLUGDIR"
-    _in_plugins ${plugins_git_repo}
-  fi
+    (( "${_setup_shell_keys[$shell]}" == 1 )) && \
+      local -n config_file="$shell"           && \
+      local -n teste="source_into_$shell"     && \
+    _setup_config_file "$config_file" "${teste[@]}"
 
-  # Change the user's default shell
-  [ "$change_shell" -eq 1 ] && usermod --shell $(which zsh) "$_USER"
+  done
+
+  # --- Install Plugins
+  for asdf_plugin in "${!_add_plugin_keys[@]}"; do
+
+    (( "${_add_plugin_keys[$asdf_plugin]}" == 1 )) && \
+    _in_asdf_plugin "$asdf_plugin"
+
+  done
 
   exit 0
 }
@@ -260,47 +266,57 @@ _main(){
 # === STARTS INSTALLATION ===
 
 declare -Ag _in_key=(
-  [in_asdf]=0
-  [setup_bash]=0
-  [setup_zsh]=0
-  [add_golang]=0
-  [add_lua]=0
-  [add_neovim]=0
-  [add_nodejs]=0
-  [add_ruby]=0
-  [add_rust]=0
-  [add_python]=0
-  [in_latest]=0
+  [asdf]=0
+  [plugin_latest]=0
 )
+
+# --- setup shell
+declare -Ag _setup_shell_keys=(
+  [bashrc]=0
+  [zshrc]=0
+)
+
+# --- add plugins
+declare -Ag _add_plugin_keys=(
+  [golang]=0
+  [lua]=0
+  [neovim]=0
+  [nodejs]=0
+  [ruby]=0
+  [rust]=0
+  [python]=0
+)
+# =========================================================
+
 while [ -n "${1}" ]; do
         case "${1}" in
-            "--asdf"      ) "${_in_key[in_asdf]}"=1   ;;
-            "--bash"      ) "${_in_key[setup_bash]}"=1;;
-            "--zsh"       ) "${_in_key[setup_zsh]}"=1 ;;
+            "--asdf"      ) "${_in_keys[asdf]}"=1  ;;
+            "--bash"      ) "${_setup_shell_keys[bashrc]}"=1   ;;
+            "--zsh"       ) "${_setup_shell_keys[zshrc]}"=1    ;;
             "--all-shells")
-                        "${_in_key[setup_bash]}"=1
-                        "${_in_key[setup_zsh]}"=1     ;;
-            "--golang"    ) "${_in_key[add_golang]}"=1;;
-            "--lua"       ) "${_in_key[add_lua]}"=1   ;;
-            "--neovim"    ) "${_in_key[add_neovim]}"=1;;
-            "--nodejs"    ) "${_in_key[add_nodejs]}"=1;;
-            "--ruby"      ) "${_in_key[add_ruby]}"=1  ;;
-            "--rust"      ) "${_in_key[add_rust]}"=1  ;;
-            "--python"    ) "${_in_key[add_python]}"=1;;
-            "--in-latest" ) "${_in_key[in_latest]}"=1 ;;
+                        "${_setup_shell_keys[bashrc]}"=1
+                        "${_setup_shell_keys[zshrc]}"=1        ;;
+            "--golang"    ) "${_add_plugin_keys[golang]}"=1   ;;
+            "--lua"       ) "${_add_plugin_keys[lua]}"=1      ;;
+            "--neovim"    ) "${_add_plugin_keys[neovim]}"=1   ;;
+            "--nodejs"    ) "${_add_plugin_keys[nodejs]}"=1   ;;
+            "--ruby"      ) "${_add_plugin_keys[ruby]}"=1     ;;
+            "--rust"      ) "${_add_plugin_keys[rust]}"=1     ;;
+            "--python"    ) "${_add_plugin_keys[python]}"=1   ;;
+            "--latest"    ) "${_in_keys[plugin_latest]}"=1;;
             "--in-all"    )
-                        "${_in_key[in_latest]}"=1
-                        "${_in_key[add_golang]}"=1
-                        "${_in_key[add_lua]}"=1
-                        "${_in_key[add_neovim]}"=1
-                        "${_in_key[add_nodejs]}"=1
-                        "${_in_key[add_ruby]}"=1
-                        "${_in_key[add_rust]}"=1
-                        "${_in_key[add_python]}"=1
-            "--help"      ) _usage; exit 0            ;;
+                        "${_in_keya[plugin_latest]}"=1
+                        "${_add_plugin_keys[golang]}"=1
+                        "${_add_plugin_keys[lua]}"=1
+                        "${_add_plugin_keys[neovim]}"=1
+                        "${_add_plugin_keys[nodejs]}"=1
+                        "${_add_plugin_keys[ruby]}"=1
+                        "${_add_plugin_keys[rust]}"=1
+                        "${_add_plugin_keys[python]}"=1       ;;
+            "--help"      ) _usage; exit 0           ;;
             *             )
                         echo "Invalid option. ${1}"
-                        exit 1                        ;;
+                        exit 1                       ;;
         esac
       shift
 done
