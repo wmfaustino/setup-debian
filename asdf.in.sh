@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ___________________________________________________________________
 #                                                                    |
-# TITLE        : zsh.in.sh                                           |
-# DESCRIPTION  : Installs Zshell, some plugins and a dotfile         |
+# TITLE        : asdf.in.sh                                          |
+# DESCRIPTION  : Installs ASDF, add plugins, install plugins         |
 # AUTHOR       : Wilson Faustino <open source (a) wfaustino dev>     |
-# DATE         : 2021-jan-07                                         |
-# VERSION      : 2.0.0                                               |
-# DEPENDENCIES : git curl                                            |
+# DATE         : 2021-jan-18                                         |
+# VERSION      : 1.0.0                                               |
+# DEPENDENCIES : apt sudo                                            |
 # NOTES        : Tested on Debian Buster and Raspberry Pi OS Buster; |
 #                but should work on any Debian based Distribution    |
 # LICENSE      : MIT                                                 |
@@ -14,40 +14,50 @@
 
 #=== ABOUT ===
 
-itSelfName="${0##*/}"
-itSelfVersion="2.0.0"
-itSelfDate='2021-jan-07'
+script_title="${0##*/}"
+script_version="2.0.0"
+script_date='2021-jan-07'
 
-authorName='Wilson Faustino'
-authorWebsite='wmfaustino dev'
-authorEmail='open source (a) wmfaustino dev'
+author='Wilson Faustino'
+author_website='wmfaustino dev'
+author_email='open source (a) wmfaustino dev'
 
 # Shows all options provided by this program ---------------
 _usage(){
-  
+
   cat <<EOF
 
-    USAGE: ${itSelfName} [OPTIONS]
-    
+    USAGE: ${script_title} [OPTIONS]
+
     OPTIONS:
 
-      -z, --zdotdir      Installs Zshell and sets ZDOTDIR
-      -p, --plugins      Installs Zshell, plugins and sets ZDOTDIR
-      -d, --dotfiles     Installs Zshell, dotfiles and sets ZDOTDIR
-      -Z, --zsh-default  Installs Zshell, sets ZDOTDIR and makes it the default shell
+      --asdf      Installs Zshell and sets ZDOTDIR
 
-      -I, --install-all  Installs Zshell, dotfiles, plugins, sets ZDOTDIR and makes it the default shell
-      -h, --help         Prints this message
+      --bash      Installs Zshell, plugins and sets ZDOTDIR
+      --zsh     Installs Zshell, dotfiles and sets ZDOTDIR
+      --all-shells  Installs Zshell, sets ZDOTDIR and makes it the default shell
+
+      --golang  Installs Zshell, dotfiles, plugins, sets ZDOTDIR and makes it the default shell
+      --lua
+      --neovim
+      --nodejs
+      --ruby
+      --rust
+      --python
+      --add-all
+
+      --latest
+
+      --help         Prints this message
 
     EXAMPLES:
 
-      $ ./${itSelfName} --install-all
-      $ ./${itSelfName} -p -d
+      $ ./${script_title} --install-all
+      $ ./${script_title} -p -d
 
-    Dependencies: git curl
-    Dotfile: "${dotfile_src_link}"
+    Dependencies: apt sudo
 
-    * ${authorName} - <${authorEmail}> - ${itSelfName} V. ${itSelfVersion}
+    * ${author} - <${author_email}> - ${script_title} V. ${script_version}
 
 EOF
 
@@ -81,14 +91,11 @@ declare -Ag _install=(
   [plugin_latest]=0
 )
 
-
 # =========================================================
 
 # --- asdf default dir
 : "${ASDF_DATA_DIR:=$HOME/.asdf}"
 
-
-exit
 # -- shells
 # --- setup shell
 declare -arg shells=(
@@ -99,7 +106,7 @@ declare -arg shells=(
 # --- bash
 declare -Ag bash=(
   [config_file]="${HOME}/.bashrc"
-  [source_asdf]=1
+  [source_asdf]=0
   [content_to_source]="
     . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
     . "'"${ASDF_DATA_DIR}'/completions/asdf.bash"\"
@@ -108,7 +115,7 @@ declare -Ag bash=(
 
 declare -Ag zsh=(
   [config_file]="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
-  [source_asdf]=1
+  [source_asdf]=0
   [content_to_source]="
     . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
     "'# append completions to fpath'"
@@ -119,22 +126,6 @@ declare -Ag zsh=(
   "
 )
 
-# declare -arg source_into_bashrc=(
-#   .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-#   .\ \"'${ASDF_DATA_DIR}'/completions/asdf.bash\"
-# )
-
-# # --- zsh
-# declare -rg zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
-
-# declare -arg source_into_zshrc=(
-#     .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-#     '# append completions to fpath'
-#     "fpath=(${ASDF_DATA_DIR}/completions \$fpath)"
-#     '# initialise completions with ZSH''s compinit'
-#     'autoload -Uz compinit'
-#     'compinit'
-# )
 # =========================================================
 
 # === ASDF PLUGINS ===
@@ -236,7 +227,7 @@ function _setup_config_file(){
   local -r config_file="$1"
   shift
 
-  echo "ASDF_DATA_DIR=$ASDF_DATA_DIR" >> "$config_file"
+  echo -e "\nASDF_DATA_DIR=$ASDF_DATA_DIR" >> "$config_file"
 
   for content in "$@"; do
     IFS=" "
@@ -286,6 +277,7 @@ _main(){
     local -n shell_to_setup="$sh"
 
     (( "${shell_to_setup[source_asdf]}" == 1 )) && \
+    echo -e "\nSourcing asdf into $sh"               && \
     _setup_config_file "${shell_to_setup[config_file]}" "${shell_to_setup[content_to_source]}"
   done
 
@@ -294,16 +286,14 @@ _main(){
 
     local -n plugin_arr="$plugin"
 
-    (( "${plugin_arr[add]}" == 1 )) && {
+      (( "${plugin_arr[add]}" == 1 )) && {
 
-    _add_asdf_plugin "$plugin";
+      _add_asdf_plugin "$plugin";
 
-    (( "${_install[plugin_latest]}" == 1 )) && asdf install "$plugin" "${plugin_arr[version]}"
+      (( "${_install[plugin_latest]}" == 1 )) && asdf install "$plugin" "${plugin_arr[version]}"
 
-  }
+    }
   done
-
-  # --- Instaling a plugin version
 
   exit 0
 }
@@ -322,7 +312,7 @@ while [ -n "${1}" ]; do
             "--all-shells")
                             for sh in ${shells[@]}; do
                               declare -n shell_to_setup="$sh"
-                              shell_to_setup[source_asdf] == 1
+                              shell_to_setup[source_asdf]=1
                             done
                           ;;
             "--golang" | \
