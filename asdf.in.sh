@@ -15,7 +15,7 @@
 #=== ABOUT ===
 
 script_title="${0##*/}"
-script_version="2.0.0"
+script_version="1.0.0"
 script_date='2021-jan-07'
 
 author='Wilson Faustino'
@@ -31,29 +31,33 @@ _usage(){
 
     OPTIONS:
 
-      --asdf      Installs Zshell and sets ZDOTDIR
+      --asdf        Install asdf version manager
 
-      --bash      Installs Zshell, plugins and sets ZDOTDIR
-      --zsh     Installs Zshell, dotfiles and sets ZDOTDIR
-      --all-shells  Installs Zshell, sets ZDOTDIR and makes it the default shell
+    SETUP SHELL:
+      --bash        Source asdf into bashrc
+      --zsh         Source asdf into zshrc
+      --all-shells  Source asdf into both (bashrc and zshrc)
 
-      --golang  Installs Zshell, dotfiles, plugins, sets ZDOTDIR and makes it the default shell
+    ADD PLUGIN:
+      --golang
       --lua
       --neovim
       --nodejs
       --ruby
       --rust
       --python
-      --add-all
+      --add-all     Add all plugins listed above
 
-      --latest
+      --latest      Install latest version available for added plugins
 
-      --help         Prints this message
+      --help        Prints this message
 
     EXAMPLES:
 
-      $ ./${script_title} --install-all
-      $ ./${script_title} -p -d
+      $ ./${script_title} --asdf --all-shells --add-all --latest
+      $ ./${script_title} --asdf --zsh --lua --nodejs
+      $ ./${script_title} --asdf --rust --latest
+      $ ./${script_title} --python
 
     Dependencies: apt sudo
 
@@ -66,37 +70,27 @@ EOF
 
 #=== INITIAL TESTS===
 
-#--- script is running with argument(s)
-# [ "${#}" -eq 0 ] && _usage
-
-#--- root access
-# [ $(id --user) -ne 0 ] && printf "\n%s\n" "You don't have root access" && exit 100
-
-###=== VARIABLES ===
-
-#--- config
-
-# sudo apt install curl git
-
-#=== INITIAL TESTS===
-
-#--- script is running with argument(s)
+# --- script is running with argument(s)
+(( "${#}" == 0 )) && _usage
 
 #--- do not run with sudo
+[[ -n "$SUDO_USER" ]] && echo "Do not run with sudo" && exit 100
+
+# =========================================================
 
 # === KEYS ===
-# --- asdf and latest version
 declare -Ag _install=(
   [asdf]=0
   [plugin_latest]=0
 )
 
+# shell and plugins keys are set at their respectives associative arrays
 # =========================================================
 
 # --- asdf default dir
 : "${ASDF_DATA_DIR:=$HOME/.asdf}"
 
-# -- shells
+# === SHELLS
 # --- setup shell
 declare -arg shells=(
   bash
@@ -108,18 +102,19 @@ declare -Ag bash=(
   [config_file]="${HOME}/.bashrc"
   [source_asdf]=0
   [content_to_source]="
-    . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
-    . "'"${ASDF_DATA_DIR}'/completions/asdf.bash"\"
+    . "'${ASDF_DATA_DIR}'/asdf.sh"
+    . "'${ASDF_DATA_DIR}'/completions/asdf.bash"
   "
 )
 
+# --- zsh
 declare -Ag zsh=(
   [config_file]="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
   [source_asdf]=0
   [content_to_source]="
-    . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
+    . "'${ASDF_DATA_DIR}'/asdf.sh"
     "'# append completions to fpath'"
-    "'"fpath=(${ASDF_DATA_DIR}/completions $fpath)'"\"
+    "'fpath=(${ASDF_DATA_DIR}/completions $fpath)'"
     "'# initialise completions with ZSH''s compinit'"
     "'autoload -Uz compinit'"
     "'compinit'"
@@ -210,7 +205,8 @@ declare -Ag python=(
 # === FUNCTIONS ===
 function _in_asdf(){
 
-  [[ -d "$ASDF_DATA_DIR" ]] && mv "$ASDF_DATA_DIR" ~/.tool-versions /tmp
+  # Remove any old asdf version already installed
+  [[ -d "$ASDF_DATA_DIR" ]] && rm -rf "$ASDF_DATA_DIR"
 
   # clone the whole repo
   git clone https://github.com/asdf-vm/asdf.git "${ASDF_DATA_DIR}"
@@ -227,11 +223,11 @@ function _setup_config_file(){
   local -r config_file="$1"
   shift
 
-  echo -e "\nASDF_DATA_DIR=$ASDF_DATA_DIR" >> "$config_file"
+  echo -e "ASDF_DATA_DIR=$ASDF_DATA_DIR" >> "$config_file"
 
   for content in "$@"; do
     IFS=" "
-    echo -e $content >> "$config_file"
+    echo -e $content #>> "$config_file"
   done
 
   return "$?"
@@ -288,10 +284,11 @@ _main(){
 
       (( "${plugin_arr[add]}" == 1 )) && {
 
-      _add_asdf_plugin "$plugin";
+        _add_asdf_plugin "$plugin";
 
-      (( "${_install[plugin_latest]}" == 1 )) && asdf install "$plugin" "${plugin_arr[version]}"
-
+        (( "${_install[plugin_latest]}" == 1 ))           && \
+          asdf install "$plugin" "${plugin_arr[version]}" && \
+          asdf global "$plugin" $(asdf list $plugin | sed 's/^[ \t]*//;s/[ \t]*$//')
     }
   done
 
