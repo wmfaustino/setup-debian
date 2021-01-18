@@ -81,36 +81,60 @@ declare -Ag _install=(
   [plugin_latest]=0
 )
 
-# --- setup shell
-declare -Ag _setup_shell=(
-  [bashrc]=0
-  [zshrc]=0
-)
 
 # =========================================================
 
 # --- asdf default dir
 : "${ASDF_DATA_DIR:=$HOME/.asdf}"
 
+
+exit
+# -- shells
+# --- setup shell
+declare -arg shells=(
+  bash
+  zsh
+)
+
 # --- bash
-declare -rg bashrc="${HOME}/.bashrc"
-
-declare -arg source_into_bashrc=(
-  .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-  .\ \"'${ASDF_DATA_DIR}'/completions/asdf.bash\"
+declare -Ag bash=(
+  [config_file]="${HOME}/.bashrc"
+  [source_asdf]=1
+  [content_to_source]="
+    . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
+    . "'"${ASDF_DATA_DIR}'/completions/asdf.bash"\"
+  "
 )
 
-# --- zsh
-declare -rg zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
-
-declare -arg source_into_zshrc=(
-    .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
-    '# append completions to fpath'
-    "fpath=(${ASDF_DATA_DIR}/completions \$fpath)"
-    '# initialise completions with ZSH''s compinit'
-    'autoload -Uz compinit'
-    'compinit'
+declare -Ag zsh=(
+  [config_file]="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
+  [source_asdf]=1
+  [content_to_source]="
+    . "'"${ASDF_DATA_DIR}'/asdf.sh"\"
+    "'# append completions to fpath'"
+    "'"fpath=(${ASDF_DATA_DIR}/completions $fpath)'"\"
+    "'# initialise completions with ZSH''s compinit'"
+    "'autoload -Uz compinit'"
+    "'compinit'"
+  "
 )
+
+# declare -arg source_into_bashrc=(
+#   .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
+#   .\ \"'${ASDF_DATA_DIR}'/completions/asdf.bash\"
+# )
+
+# # --- zsh
+# declare -rg zshrc="${ZDOTDIR:=$HOME/.config/zsh}/.zshrc"
+
+# declare -arg source_into_zshrc=(
+#     .\ \"'${ASDF_DATA_DIR}'/asdf.sh\"
+#     '# append completions to fpath'
+#     "fpath=(${ASDF_DATA_DIR}/completions \$fpath)"
+#     '# initialise completions with ZSH''s compinit'
+#     'autoload -Uz compinit'
+#     'compinit'
+# )
 # =========================================================
 
 # === ASDF PLUGINS ===
@@ -212,8 +236,11 @@ function _setup_config_file(){
   local -r config_file="$1"
   shift
 
-  for file in "$@"; do
-    echo "${file}" >> "$config_file"
+  echo "ASDF_DATA_DIR=$ASDF_DATA_DIR" >> "$config_file"
+
+  for content in "$@"; do
+    IFS=" "
+    echo -e $content >> "$config_file"
   done
 
   return "$?"
@@ -253,17 +280,13 @@ _main(){
   (( "${_install[asdf]}" == 1 )) && _in_asdf
 
   # --- Setup shells
-  for shell in "${!_setup_shell[@]}"; do
+  for sh in ${shells[@]}; do
 
-    if (( "${_setup_shell[$shell]}" == 1 )); then
+    # reference sh to each shell associative array
+    local -n shell_to_setup="$sh"
 
-      # reference shell to setup_shell associative array
-      local -n config_file="$shell"
-      local -n lines_to_source="_setup_$shell"
-
-    _setup_config_file "$config_file" "${lines_to_source[@]}"
-  fi
-
+    (( "${shell_to_setup[source_asdf]}" == 1 )) && \
+    _setup_config_file "${shell_to_setup[config_file]}" "${shell_to_setup[content_to_source]}"
   done
 
   # --- Adding Plugins
@@ -290,12 +313,18 @@ _main(){
 # === STARTS INSTALLATION ===
 while [ -n "${1}" ]; do
         case "${1}" in
-            "--asdf"      ) "${_install[asdf]}"=1         ;;
-            "--bash"      ) "${_setup_shell[bashrc]}"=1   ;;
-            "--zsh"       ) "${_setup_shell[zshrc]}"=1    ;;
+            "--asdf"      ) _install[asdf]=1
+                          ;;
+            "--bash"      ) bash[source_asdf]=1
+                          ;;
+            "--zsh"       ) zsh[source_asdf]=1
+                          ;;
             "--all-shells")
-                        "${_setup_shell[bashrc]}"=1
-                        "${_setup_shell[zshrc]}"=1        ;;
+                            for sh in ${shells[@]}; do
+                              declare -n shell_to_setup="$sh"
+                              shell_to_setup[source_asdf] == 1
+                            done
+                          ;;
             "--golang" | \
             "--lua"    | \
             "--neovim" | \
@@ -303,21 +332,23 @@ while [ -n "${1}" ]; do
             "--ruby"   | \
             "--rust"   | \
             "--python"    )
-                        declare -n plugin_arr="${1#--*}";
-                        plugin_arr[add]=1;
-                        ;;
+                            declare -n plugin_arr="${1#--*}";
+                            plugin_arr[add]=1;
+                          ;;
             "--add-all"   )
-                        for plugin in "${plugins[@]}";
-                          do
-                            declare -n plugin_arr="$plugin"
-                            plugin_arr[add]=1
-                          done
-                        ;;
-            "--latest"    ) _install[plugin_latest]=1;;
-            "--help"      ) _usage; exit 0                ;;
+                            for plugin in "${plugins[@]}"; do
+                              declare -n plugin_arr="$plugin"
+                              plugin_arr[add]=1
+                            done
+                          ;;
+            "--latest"    ) _install[plugin_latest]=1
+                          ;;
+            "--help"      ) _usage; exit 0
+                          ;;
             *             )
-                        echo "Invalid option. ${1}"
-                        exit 1                            ;;
+                            echo "Invalid option. ${1}"
+                            exit 1
+                          ;;
         esac
       shift
 done
