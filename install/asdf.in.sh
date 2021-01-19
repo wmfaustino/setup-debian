@@ -162,6 +162,10 @@ declare -Ag neovim=(
   [add]=0
   [version]="nightly"
 )
+if [[ "$(uname -m)" =~ 'arm' ]]; then
+  neovim[dependencies]="cmake pkg-config automake libtool libtool-bin unzip gettext"
+  neovim[version]="ref:nightly"
+fi
 # =========================================================
 
 # --- nodejs
