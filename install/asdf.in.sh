@@ -15,8 +15,8 @@
 #=== ABOUT ===
 
 script_title="${0##*/}"
-script_version="1.0.0"
-script_date='2021-jan-07'
+script_version="1.0.1"
+script_date='2021-jan-19'
 
 author='Wilson Faustino'
 author_website='wmfaustino dev'
