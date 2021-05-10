@@ -1,0 +1,82 @@
+git
+xorgnawesome
+firefox
+tilix
+pavucontrol
+pasystray
+nitrogen
+zsh
+pulseaudio
+variety
+bash-completion
+neofetch
+ecryptfs-utils
+zulucrypt-cli
+zulumount-cli
+caja
+caja-dropbox
+htop
+nvidia-detect
+snapd
+sudo snap install core
+sudo snap install telegram-desktop
+sudo snap install mailspring
+vlc
+chromium
+feh
+nvidia-driver firmware-misc-nonfree
+acpitool
+cbatticon
+nomacs
+locate
+comptom
+caja-actions
+caja-admin
+caja-image-converter
+caja-mediainfo
+caja-open-terminal
+caja-wallpaper
+caja-sendto
+caja-rename
+caja-seahorse
+caja-xattr-tags
+lxappearance
+xfce4-power-manager
+flameshot
+gnome-calendar
+evolution
+caja
+caja-dropbox
+linux-headers-$(uname -r)
+build-essential
+linux-headers-$(uname -r) build-essential nvidia-detect nvidia-driver
+lshw
+xbacklight
+pnmixer
+materia-gtk-theme
+papirus-icon-theme
+xclip
+i3lock-fancy
+rofi
+qt5-style-plugins
+resolvconf
+lightdm-gtk-greeter-settings
+tree
+apt-listbugs
+lm-sensors
+fancontrol
+ncdu
+psmisc
+resolvconf
+
+alacritty: apt-get install cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev python3
+gnome-calculator
+ fontconfig fontconfig-config libfontconfig1 libfontconfig1-dev libxft-dev libxft2 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libpangomm-1.4-1v5 libpangomm-1.4-dev libpangoxft-1.0-0 libotf0 -y
+
+pastebinit
+pdfarranger
+atril
+sudo apt install network-manager nm-tray
+sudo apt install cups system-config-printer hplip hplip-gui
+sudo apt install skanlite
+sudo apt install simple-scan
