@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sudo wpa_supplicant -B -D nl80211 -i wlp0s20f3 -c /etc/wpa_supplicant/wpa_supplicant.conf && sudo dhclient wlp0s20f3

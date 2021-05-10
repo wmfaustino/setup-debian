@@ -1,0 +1,12 @@
+dir='/usr/share/cowsay/cows/'
+file=`/bin/ls -1 "$dir" | sort --random-sort | head -1`
+cow=$(echo "$file" | sed -e "s/\.cow//")
+/usr/games/fortune -a | cowsay -f $cow
+
+
+fortune | cowsay -f `ls /usr/share/cowsay/cows/ | shuf -n 1`
+
+lolcat skeleton.cow
+
+# echo I ❤ Tecmint | lolcat
+# figlet I Love Tecmint | lolcat
